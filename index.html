@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <meta charset="utf-8"></meta>
+    <title>GC Log Visualiser</title>
+    <script src="main.js"></script>
+  </head>
+  <body>
+    <div>
+      <form>
+        <p>Paste GC log below and press Process:</p>
+        <textarea id="inputText" cols="80" rows="20"></textarea>
+        <input type="button" onclick="processLog()" value="Process"></input>
+      </form>
+    </div>
+    <div id="outputDiv">
+    </div>
+  </body>
+</html>
