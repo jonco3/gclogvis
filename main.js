@@ -1,13 +1,17 @@
+/*-*- Mode: JS; tab-width: 4 -*-*/
+
 let blankRe = /^$/;
 let collectStartRe = /^GC\(.+\) =+/;
 let sliceStartRe = /^  ---- Slice \d+ ----/;
 let totalsStartRe = /^  ---- Totals ----/;
+let pauseRe = /^    Pause: ([\d\.]+)ms of ([\d\.]+)ms budget/;
 let timeRe = /^    ( *)([\w ]+): ([\d\.]+)ms/
 
 let state;
 let outputDiv;
 let collectionCount;
 let collectionLines;
+let sliceBudget;
 let sliceTimes;
 let sliceLines;
 
@@ -37,15 +41,18 @@ function processLog()
             } else if (line.match(totalsStartRe)) {
                 startTotals();
             } else {
-                let match = line.match(timeRe);
-                if (match)
+                let match;
+                if (match = line.match(pauseRe))
+                    processPause(...match);
+                else if (match = line.match(timeRe))
                     processTimes(...match);
-                else
-                    sliceLines.push(line);
+
+                sliceLines.push(line);
             }
             break;
 
         case "totals":
+            // The contents of this section are ignored.
             if (line.match(blankRe))
                 state = "top";
             break;
@@ -82,6 +89,7 @@ function finishSlice()
     renderSlice();
     sliceTimes = null;
     sliceLines = null;
+    sliceBudget = undefined;
 }
 
 function startTotals()
@@ -90,13 +98,17 @@ function startTotals()
     state = "totals";
 }
 
+function processPause(line, total, budget)
+{
+    sliceBudget = parseFloat(budget);
+}
+
 function processTimes(line, indent, label, timeStr)
 {
     let level = indent.length / 2;
     let time = parseFloat(timeStr);
     if (level === 1 && !ignorePhase(label))
         sliceTimes.push([label, time]);
-    sliceLines.push(line);
 }
 
 function renderCollection()
@@ -118,8 +130,11 @@ function renderSlice()
         totalTime += time;
     });
 
+    if (totalTime < sliceBudget)
+        totalTime = sliceBudget;
+
     let canvas = document.createElement("canvas");
-    canvas.width = totalTime * scalePixelsPerMs;
+    canvas.width = Math.ceil(totalTime * scalePixelsPerMs);
     canvas.height = sliceHeightPixels;
     canvas.title = sliceLines.join("\n");
 
@@ -132,6 +147,12 @@ function renderSlice()
         ctx.fillRect(x, 0, x1, sliceHeightPixels);
         x = x1;
     });
+
+    x = sliceBudget * scalePixelsPerMs;
+    ctx.strokeStyle = "black";
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, sliceHeightPixels);
+    ctx.stroke();
 
     let div = document.createElement("div");
     div.appendChild(canvas);
