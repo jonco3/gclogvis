@@ -134,7 +134,7 @@ function renderSlice()
         totalTime = sliceBudget;
 
     let canvas = document.createElement("canvas");
-    canvas.width = Math.ceil(totalTime * scalePixelsPerMs);
+    canvas.width = Math.ceil(totalTime * scalePixelsPerMs) + 1;
     canvas.height = sliceHeightPixels;
     canvas.title = sliceLines.join("\n");
 
